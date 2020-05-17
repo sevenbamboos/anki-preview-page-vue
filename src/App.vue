@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import UploadPage from './components/UploadPage.vue'
+import UploadPage from './upload/UploadPage.vue'
 
 export default {
   name: 'App',

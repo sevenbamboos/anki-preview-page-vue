@@ -27,7 +27,7 @@
       </div>
 
       <div v-else-if="inGroupMode">
-        <group-list :errorMessage="message.isError ? message.contents : null" :groupList="groups" :fileName="selectedFile" @onOutputFile="onOutputFile"/>
+        <group-list :errorMessage="message.isError ? message.contents : null" :groupList="groups" :fileName="selectedFile.file" @onOutputFile="onOutputFile"/>
       </div>
 
       <div v-else>
@@ -37,10 +37,10 @@
 
     <hr/>
 
-    <div v-if="selectedFile" class="file-name">
+    <div v-if="selectedFile.file" class="file-name">
       <!-- <button @click="backToList">File</button> -->
-      {{selectedFile}}
-      <button @click="onOutputFile(selectedFile)">Output</button>
+      {{selectedFile.file}}
+      <button @click="onOutputFile(selectedFile.file)">Output</button>
     </div>
 
     <message-bar :message="message"/>
@@ -50,11 +50,12 @@
 
 <script>
 
-import UploadBar from "./UploadBar.vue";
-import FileList from "./FileList.vue";
-import GroupList from "./GroupList.vue";
-import MessageBar from "./MessageBar.vue";
-import { list, getGroups, clear, output } from '../services/anki-importer-preview.service';
+import UploadBar from "./components/UploadBar.vue";
+import FileList from "./components/FileList.vue";
+import GroupList from "./components/GroupList.vue";
+import MessageBar from "../common/components/MessageBar.vue";
+import { output } from '../services/anki-importer-preview.service';
+import {store} from "../store";
 
 const FILE_MODE = 0, GROUP_MODE = 1;
 
@@ -82,52 +83,26 @@ export default {
       mode: FILE_MODE,
       clozeQuestion: false,
       basicQuestion: false,
-      message: {content: null, isError: false},
-      files: [],
-      groups: [],
-      selectedFile: null
+      message: store.state.message,
+      files: store.state.files,
+      groups: store.state.groups,
+      selectedFile: store.state.selectedFile
     };
   },
   methods: {
     async onList() {
       this.mode = FILE_MODE;
-      try {
-        this.files = await list();
-        this.resetMessage();
-        if (this.files.length == 0) {
-          this.showInfo('No files');
-        }
-      } catch (e) {
-        this.showError(e);
-        this.files = [];
-      }
+      await store.getFiles();
     },
 
     async onClear() {
       this.mode = FILE_MODE;
-      try {
-        const deleted = await clear();
-        console.log("File deleted:" + deleted);
-        this.files = [];
-        this.selectedFile = null;
-        this.showInfo('Files cleared');
-      } catch (e) {
-        this.showError(e);
-        this.files = [];
-        this.selectedFile = null;
-      }
+      await store.clearFiles();
     },
 
     async onClickFile(fileName) {
       this.mode = GROUP_MODE;
-      try {
-        this.groups = await getGroups(fileName, this.getQuestion());
-        this.selectedFile = fileName;
-        this.resetMessage();
-      } catch (e) {
-        this.showError(e);
-        this.groups = [];
-      }
+      await store.parseGroups(fileName, this.getQuestion());
     },
 
     async onOutputFile(fileName) {
@@ -176,18 +151,15 @@ export default {
     },
 
     resetMessage() {
-      this.message.content = null;
-      this.message.isError = false;
+      store.resetMessage();
     },
 
     showInfo(contents) {
-      this.message.content = contents;
-      this.message.isError = false;
+      store.showInfo(contents);
     },
 
     showError(contents) {
-      this.message.content = contents;
-      this.message.isError = true;
+      store.showError(contents);
     },
 
     getQuestion() {

@@ -22,7 +22,7 @@
 
 <script>
 
-import { upload } from '../services/anki-importer-preview.service';
+import { upload } from '../../services/anki-importer-preview.service';
 
 const STATUS_INITIAL = 0, STATUS_SAVING = 1, STATUS_SUCCESS = 2, STATUS_FAILED = 3;
 
