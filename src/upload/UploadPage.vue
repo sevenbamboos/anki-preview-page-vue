@@ -1,6 +1,8 @@
 <template>
   <div class="upload-page">
 
+    <message-bar :message="message"/>
+
     <div class="menu-buttons">
       <div>
         <button type="button" @click="onList">List</button>
@@ -27,7 +29,7 @@
       </div>
 
       <div v-else-if="inGroupMode">
-        <group-list :errorMessage="message.isError ? message.contents : null" :groupList="groups" :fileName="selectedFile.file" @onOutputFile="onOutputFile"/>
+        <group-list :errorMessage="message.isError ? message.contents : null" :groupList="groups" :fileName="selectedFile" @onOutputFile="onOutputFile"/>
       </div>
 
       <div v-else>
@@ -35,15 +37,10 @@
       </div>
     </div>
 
-    <hr/>
-
-    <div v-if="selectedFile.file" class="file-name">
-      <!-- <button @click="backToList">File</button> -->
-      {{selectedFile.file}}
-      <button @click="onOutputFile(selectedFile.file)">Output</button>
+    <div v-if="selectedFile" class="file-name">
+      {{selectedFile}}
+      <button @click="onOutputFile(selectedFile)">Output</button>
     </div>
-
-    <message-bar :message="message"/>
 
   </div>
 </template>
@@ -54,8 +51,9 @@ import UploadBar from "./components/UploadBar.vue";
 import FileList from "./components/FileList.vue";
 import GroupList from "./components/GroupList.vue";
 import MessageBar from "../common/components/MessageBar.vue";
-import { output } from '../services/anki-importer-preview.service';
-import {store} from "../store";
+import { output, formatOutputMessage } from '../services/anki-importer-preview.service';
+import { mapState, mapActions } from 'vuex';
+import { action } from "../constant";
 
 const FILE_MODE = 0, GROUP_MODE = 1;
 
@@ -76,65 +74,45 @@ export default {
     },
     inGroupMode() {
       return this.mode === GROUP_MODE;
-    }
+    },
+    ...mapState([
+      'message', 
+      'files', 
+      'groups', 
+      'selectedFile'
+    ])
   },   
   data: function(){
     return {
       mode: FILE_MODE,
       clozeQuestion: false,
-      basicQuestion: false,
-      message: store.state.message,
-      files: store.state.files,
-      groups: store.state.groups,
-      selectedFile: store.state.selectedFile
+      basicQuestion: false
     };
   },
   methods: {
     async onList() {
       this.mode = FILE_MODE;
-      await store.getFiles();
+      await this.$store.dispatch(action.GET_FILES);
     },
 
     async onClear() {
       this.mode = FILE_MODE;
-      await store.clearFiles();
+      await this.$store.dispatch(action.CLEAR_ALL_FILES);
     },
 
     async onClickFile(fileName) {
       this.mode = GROUP_MODE;
-      await store.parseGroups(fileName, this.getQuestion());
+      await this.$store.dispatch(action.PARSE_GROUPS, fileName, this.getQuestion());
     },
 
     async onOutputFile(fileName) {
       try {
         const collector = await output(fileName, this.getQuestion());
         await this.onList();
-        this.showInfo(this.formatOutputMessage(collector));
+        this.showInfo(formatOutputMessage(collector));
       } catch (e) {
         this.showError(e);
       }
-    },
-
-    formatOutputMessage(collector) {
-      let result = '';
-      if (collector.errorCards.length > 0) {
-        result +='Error Cards ' + collector.errorCards.length + '; ';
-      }
-
-      if (collector.ignoredGroups.length > 0) {
-        result +='Ignored Groups ' + collector.ignoredGroups.length + '; ';
-      }
-
-      if (collector.groups.length > 0) {
-        result += 'Groups ' + collector.groups.join(',') + '; ';
-      }
-
-      result += 'Cloze ' + collector.clozeCards.length + '; ';
-      result += 'Basic ' + collector.basicCards.length + '; ';
-
-      result += ' at ' + new Date().toTimeString();
-
-      return result;
     },
 
     backToList() {
@@ -150,18 +128,6 @@ export default {
       this.showError(error);
     },
 
-    resetMessage() {
-      store.resetMessage();
-    },
-
-    showInfo(contents) {
-      store.showInfo(contents);
-    },
-
-    showError(contents) {
-      store.showError(contents);
-    },
-
     getQuestion() {
       if (this.clozeQuestion && this.basicQuestion) {
         return 'A';
@@ -172,7 +138,13 @@ export default {
       } else {
         return '';
       }
-    }
+    },
+
+    ...mapActions([
+      'resetMessage',
+      'showInfo',
+      'showError'
+    ])
   }
 }
 </script>
@@ -203,7 +175,5 @@ a {
 .main-area {
   display: block;
   width: 100%;
-  height: 500px;
-  overflow: auto;  
 }
 </style>

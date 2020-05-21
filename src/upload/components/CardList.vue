@@ -177,6 +177,11 @@ li {
   padding-bottom: 10px;
 }
 
+.card-list {
+  height: 450px;
+  overflow: auto;
+}
+
 .card {
   white-space: nowrap;
   width: 200%;  

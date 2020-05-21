@@ -47,6 +47,9 @@ export default {
 
 .message-bar-message {
   flex-grow: 100;
+  text-align: left;
+  margin: auto;
+  padding-left: 1em;
 }
 
 .general-message {

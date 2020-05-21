@@ -1,48 +1,46 @@
 <template>
   <div class="group-list">
-      <div v-if="groupList">
-        <ol>
-
-          <li>
-            <span v-if="hasPrev">
-              <a href="#" @click="onPrev">&lt;&lt;</a>
-            </span>
-            <span v-else>
-              &lt;&lt;
-            </span>
-          </li>
-
-          <li v-for="group in groupWithErrorList" :key="group.name">
-            <div :class="{'current-group': isCurrentGroup(group)}">
-            <div v-if="count(group) > 0">
-              <a href="#" @click="onClickGroup(group)">{{ group.name }}</a>
-              <span class="group-count">({{count(group)}})</span>
-              <span v-if="!group.good" class="bad-group">
-                !!!
-              </span>
-              <span v-if="group.new" class="new-group">
-                New
-              </span>
-              <span v-if="group.changed" class="changed-group">
-                Changed 
-              </span>
-            </div>
-            <div v-else>
-              {{ group.name }}
-            </div>
-            </div>
-          </li>
-
-          <li>
-            <span v-if="hasNext">
-              <a href="#" @click="onNext">&gt;&gt;</a>
-            </span>
-            <span v-else>
-              &gt;&gt;
-            </span>
-          </li>
-
-        </ol>
+      <div class="groups-navigator" v-if="groupList">
+        <div class="navigator-button">
+          <span v-if="hasPrev">
+            <a href="#" @click="onPrev">&lt;&lt;</a>
+          </span>
+          <span v-else>
+            &lt;&lt;
+          </span>
+        </div>
+        <div>
+          <ol>
+            <li v-for="group in groupWithErrorList" :key="group.name">
+              <div :class="{'current-group': isCurrentGroup(group)}">
+              <div v-if="count(group) > 0">
+                <a href="#" @click="onClickGroup(group)">{{ group.name }}</a>
+                <span class="group-count">({{count(group)}})</span>
+                <span v-if="!group.good" class="bad-group">
+                  !!!
+                </span>
+                <span v-if="group.new" class="new-group">
+                  New
+                </span>
+                <span v-if="group.changed" class="changed-group">
+                  Changed 
+                </span>
+              </div>
+              <div v-else>
+                {{ group.name }}
+              </div>
+              </div>
+            </li>
+          </ol>
+        </div>
+        <div class="navigator-button">
+          <span v-if="hasNext">
+            <a href="#" @click="onNext">&gt;&gt;</a>
+          </span>
+          <span v-else>
+            &gt;&gt;
+          </span>
+        </div>
       </div>
       <div class="info" v-else>
         No groups    
@@ -147,5 +145,12 @@ li {
 .changed-group {
   color: blue;
   font-size: 50%;
+}
+.groups-navigator {
+  display: flex;
+  flex-flow: row;
+}
+.navigator-button {
+  margin: auto;
 }
 </style>

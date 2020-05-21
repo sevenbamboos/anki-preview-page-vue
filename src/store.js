@@ -1,67 +1,92 @@
+import Vue from 'vue'
+import Vuex from 'vuex';
 import { list, clear, getGroups } from './services/anki-importer-preview.service';
+import { mutation, action } from './constant';
 
-const store = {
+Vue.use(Vuex);
+
+const store = new Vuex.Store({
   state: {
     message: {content: null, isError: false},
     files: [],
-    selectedFile: {file: null},
+    selectedFile: null,
     groups: []
   },
 
-  async getFiles() {
-    try {
-      this.state.files.splice(0);
-      this.state.files.push(... await list());
-      this.resetMessage();
-      if (this.state.files.length == 0) {
-        this.showInfo('No files');
+  mutations: {
+
+    [mutation.SET_MESSAGE](state, {content, isError}) {
+      state.message.content = content;
+      state.message.isError = isError;
+    },
+    [mutation.CLEAR_FILES](state) {
+      state.files.splice(0);
+    },
+    [mutation.ADD_FILES](state, fileList) {
+      state.files = fileList; 
+    },
+    [mutation.CLEAR_GROUPS](state) {
+      state.groups.splice(0);
+    },
+    [mutation.REPLACE_GROUPS](state, groupList) {
+      state.groups = groupList;
+    },
+    [mutation.SELECT_FILE](state, fileName) {
+      state.selectedFile = fileName; 
+    }
+  },
+
+  actions: {
+    [action.RESET_MESSAGE]({commit}) {
+      commit(mutation.SET_MESSAGE, {content: null, isError: false});
+    },    
+
+    [action.SHOW_INFO]({commit}, content) {
+      commit(mutation.SET_MESSAGE, {content, isError: false});
+    },
+
+    [action.SHOW_ERROR]({commit}, content) {
+      commit(mutation.SET_MESSAGE, {content, isError: true});
+    },
+
+    async [action.GET_FILES]({commit, dispatch}) {
+      try {
+        commit(mutation.ADD_FILES, await list());
+        dispatch(action.RESET_MESSAGE);
+        if (this.state.files.length == 0) {
+          dispatch(action.SHOW_INFO, 'No files');
+        }
+      } catch (e) {
+        dispatch(action.SHOW_ERROR, e);
+        commit(mutation.CLEAR_FILES);
+      }    
+    },    
+
+    async [action.CLEAR_ALL_FILES]({commit, dispatch}) {
+      try {
+        const deleted = await clear();
+        console.log("File deleted:" + deleted);
+        commit(mutation.CLEAR_FILES);
+        commit(mutation.SELECT_FILE, null);
+        dispatch(action.SHOW_INFO, 'Files cleared');
+      } catch (e) {
+        dispatch(action.SHOW_ERROR, e);
+        commit(mutation.CLEAR_FILES);
+        commit(mutation.SELECT_FILE, null);
       }
-    } catch (e) {
-      this.showError(e);
-      this.state.files.splice(0);
-    }    
-  },
+    },
 
-  async clearFiles() {
-    try {
-      const deleted = await clear();
-      console.log("File deleted:" + deleted);
-      this.state.files.splice(0);
-      this.state.selectedFile.file = null;
-      this.showInfo('Files cleared');
-    } catch (e) {
-      this.showError(e);
-      this.state.files.splice(0);
-      this.state.selectedFile.file = null;
-    }
+    async [action.PARSE_GROUPS]({commit, dispatch}, fileName, question) {
+      try {
+        commit(mutation.REPLACE_GROUPS, await getGroups(fileName, question)); 
+        commit(mutation.SELECT_FILE, fileName);
+        dispatch(action.RESET_MESSAGE);
+      } catch (e) {
+        dispatch(action.SHOW_ERROR, e);
+        commit(mutation.CLEAR_GROUPS);
+      }
+    },
   },
-
-  async parseGroups(fileName, question) {
-    try {
-      this.state.groups.splice(0);
-      this.state.groups.push(... await getGroups(fileName, question));
-      this.state.selectedFile.file = fileName;
-      this.resetMessage();
-    } catch (e) {
-      this.showError(e);
-      this.state.groups.splice(0);
-    }
-  },
-
-  resetMessage() {
-    this.state.message.content = null;
-    this.state.message.isError = false;
-  },
-
-  showInfo(contents) {
-    this.state.message.content = contents;
-    this.state.message.isError = false;
-  },
-
-  showError(contents) {
-    this.state.message.content = contents;
-    this.state.message.isError = true;
-  }
-};
+});
 
 export {store};
