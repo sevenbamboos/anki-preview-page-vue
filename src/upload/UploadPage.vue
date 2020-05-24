@@ -7,7 +7,7 @@
       <div>
         <button type="button" @click="onList">List</button>
         <button type="button" @click="onClear">Clear</button>
-
+        <button @click="onOutputAll" :disabled="files.length <= 0">Output All</button>
         <span class="question-check">
           <input id="clozeCheckBox" type="checkbox" v-model="clozeQuestion"/>
           <label for="clozeCheckBox">Cloze</label>
@@ -51,7 +51,7 @@ import UploadBar from "./components/UploadBar.vue";
 import FileList from "./components/FileList.vue";
 import GroupList from "./components/GroupList.vue";
 import MessageBar from "../common/components/MessageBar.vue";
-import { output, formatOutputMessage } from '../services/anki-importer-preview.service';
+import { output, outputs, formatOutputMessage } from '../services/anki-importer-preview.service';
 import { mapState, mapActions } from 'vuex';
 import { action } from "../constant";
 
@@ -108,6 +108,16 @@ export default {
     async onOutputFile(fileName) {
       try {
         const collector = await output(fileName, this.getQuestion());
+        await this.onList();
+        this.showInfo(formatOutputMessage(collector));
+      } catch (e) {
+        this.showError(e);
+      }
+    },
+
+    async onOutputAll() {
+      try {
+        const collector = await outputs(this.files, this.getQuestion());
         await this.onList();
         this.showInfo(formatOutputMessage(collector));
       } catch (e) {

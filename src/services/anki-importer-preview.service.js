@@ -54,6 +54,20 @@ function output(fileName, question) {
     });
 }
 
+function outputs(fileNames, question) {
+
+  const url = `${BASE_URL}/outputs`;
+
+  return axios.post(url, {
+    files: fileNames, 
+    question
+  })
+    .then(x => x.data)
+    .catch(err => {
+      throw err;
+    });
+}
+
 function clear() {
 
   const url = `${BASE_URL}/clear`;
@@ -88,4 +102,4 @@ function formatOutputMessage(collector) {
   return result;
 }
 
-export { upload, list, getGroups, clear, output, formatOutputMessage }
+export { upload, list, getGroups, clear, output, outputs, formatOutputMessage }
